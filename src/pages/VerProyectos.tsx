@@ -8,6 +8,7 @@ import ContextMenu from '../components/ContextMenu';
 import ModalAlerta from '../components/ModalAlerta';
 import ModalExito from '../components/ModalExito';
 import { TeamContext } from '../context/TeamContext';
+import type { Project } from "../types/Project";
 
 type ContextMenuPosition = { x: number; y: number };
 
@@ -71,9 +72,9 @@ const VerProyectos: React.FC = () => {
         setSelectedFecha(e.target.value);
     };
 
-    function filtrarPorFecha(proyecto: any) {
+    function filtrarPorFecha(proyecto: Project) {
         if (selectedFecha === 'Todas las fechas') return true;
-        const fecha = new Date(proyecto.fechaCreacion);
+        const fecha = new Date(proyecto.fechaInicio);
         const ahora = new Date();
         if (selectedFecha === 'Este mes') {
             return (
