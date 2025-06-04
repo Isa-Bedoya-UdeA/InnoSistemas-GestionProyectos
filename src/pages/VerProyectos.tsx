@@ -22,6 +22,10 @@ function getButtonPosition(button: HTMLElement): ContextMenuPosition {
 }
 
 const VerProyectos: React.FC = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedEstado, setSelectedEstado] = useState('Todos los estados');
+    const [selectedFecha, setSelectedFecha] = useState('Todas las fechas');
+
     const { selectedTeam } = useContext(TeamContext)!;
     const { proyectos } = selectedTeam || { proyectos: [] };
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -29,10 +33,6 @@ const VerProyectos: React.FC = () => {
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-    
-    const filteredProjects = proyectos.filter(
-        (proyecto) => proyecto.equipo === selectedTeam?.id
-    );
 
     const handleContextMenu = (event: React.MouseEvent<HTMLButtonElement>, buttonElement: HTMLButtonElement, projectId: number) => {
         event.preventDefault(); // Previene el menú contextual del navegador
@@ -59,6 +59,54 @@ const VerProyectos: React.FC = () => {
         handleCloseContextMenu();
     };
 
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+    };
+
+    const handleEstadoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedEstado(e.target.value);
+    };
+
+    const handleFechaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedFecha(e.target.value);
+    };
+
+    function filtrarPorFecha(proyecto: any) {
+        if (selectedFecha === 'Todas las fechas') return true;
+        const fecha = new Date(proyecto.fechaCreacion);
+        const ahora = new Date();
+        if (selectedFecha === 'Este mes') {
+            return (
+                fecha.getMonth() === ahora.getMonth() &&
+                fecha.getFullYear() === ahora.getFullYear()
+            );
+        }
+        if (selectedFecha === 'Este semestre') {
+            const semestreActual = Math.floor(ahora.getMonth() / 6);
+            const semestreProyecto = Math.floor(fecha.getMonth() / 6);
+            return (
+                semestreActual === semestreProyecto &&
+                fecha.getFullYear() === ahora.getFullYear()
+            );
+        }
+        if (selectedFecha === 'Este año') {
+            return fecha.getFullYear() === ahora.getFullYear();
+        }
+        return true;
+    }
+
+    const filteredProjects = proyectos
+        .filter((proyecto) => proyecto.equipo === selectedTeam?.id)
+        .filter((proyecto) =>
+            proyecto.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter((proyecto) =>
+            selectedEstado === 'Todos los estados'
+                ? true
+                : proyecto.estado === selectedEstado
+        )
+        .filter(filtrarPorFecha);
+
     return (
         <section className="flex flex-col w-full h-full items-start gap-[30px] overflow-y-auto relative"> {/* Añadimos relative aquí para posicionar el ContextMenu */}
             <div className="flex items-center justify-between w-full">
@@ -71,7 +119,7 @@ const VerProyectos: React.FC = () => {
                         <SearchIcon className="text-[#a6a6a6]" />
                         <input
                             className="ml-[1rem] w-full h-full border-none text-sm font-normal focus:outline-none focus:ring-0"
-                            placeholder="Buscar proyectos..." />
+                            placeholder="Buscar proyectos..." onChange={handleSearchChange} value={searchTerm} />
                     </div>
 
                     <button className="rounded-[0.5rem] bg-[#307dfd] text-[#fff] border-none p-[0.5rem] inline-flex items-center justify-center hover:bg-[#4687f2] transition-colors duration-200">
@@ -82,14 +130,19 @@ const VerProyectos: React.FC = () => {
             </div>
 
             <div className="flex p-[1rem] gap-[1rem] space-x-4">
-                <select className="border-none outline-[1px] outline-[#a6a6a6] border-r-[1rem] border-r-[#fff] p-[0.5rem] pr-[1rem] rounded-[0.5rem]">
+                <select className="border-none outline-[1px] outline-[#a6a6a6] border-r-[1rem] border-r-[#fff] p-[0.5rem] pr-[1rem] rounded-[0.5rem]" onChange={handleEstadoChange}
+                    value={selectedEstado}>
                     <option>Todos los estados</option>
                     <option>En progreso</option>
                     <option>Terminado</option>
                     <option>Pendiente</option>
                 </select>
 
-                <select className="border-none outline-[1px] outline-[#a6a6a6] border-r-[1rem] border-r-[#fff] p-[0.5rem] pr-[1rem] rounded-[0.5rem]">
+                <select
+                    className="border-none outline-[1px] outline-[#a6a6a6] border-r-[1rem] border-r-[#fff] p-[0.5rem] pr-[1rem] rounded-[0.5rem]"
+                    onChange={handleFechaChange}
+                    value={selectedFecha}
+                >
                     <option>Todas las fechas</option>
                     <option>Este mes</option>
                     <option>Este semestre</option>

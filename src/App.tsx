@@ -16,7 +16,7 @@ const project1: Project = {
     fechaInicio: "2025/01/15",
     fechaFin: "2025/03/30",
     progreso: 65,
-    miembros: ["JD John Doe", "AS Anna Smith"],
+    miembros: ["John Doe", "Anna Smith"],
     equipo: 1,
     descripcion: 'Diseño y desarrollo de un nuevo sitio web corporativo.'
 };
@@ -28,7 +28,7 @@ const project2: Project = {
     fechaInicio: "2024/11/10",
     fechaFin: "2025/02/20",
     progreso: 100,
-    miembros: ["JD John Doe", "AS Anna Smith", "LM Laura Morales"],
+    miembros: ["John Doe", "Anna Smith", "Laura Morales"],
     equipo: 1,
     descripcion: 'Desarrollo de una aplicación móvil para iOS y Android.'
 };
@@ -40,7 +40,7 @@ const project3: Project = {
     fechaInicio: "2026/03/05",
     fechaFin: "2026/04/15",
     progreso: 5,
-    miembros: ["MM Maria Martinez"],
+    miembros: ["Maria Martinez"],
     equipo: 2, // Este proyecto pertenece a "equipo-b"
     descripcion: 'Integración de nuevas APIs para funcionalidades de terceros.'
 };
@@ -52,7 +52,7 @@ const project4: Project = {
     fechaInicio: "2025/05/01",
     fechaFin: "2025/06/30",
     progreso: 40,
-    miembros: ["RT Roberto Torres"],
+    miembros: ["Roberto Torres"],
     equipo: 2,
     descripcion: 'Optimización de las consultas y estructuras de la base de datos principal.'
 };
@@ -64,7 +64,7 @@ const project5: Project = {
     fechaInicio: "2025/01/07",
     fechaFin: "2025/08/31",
     progreso: 10,
-    miembros: ["VM Victor Morales"],
+    miembros: ["Victor Morales"],
     equipo: 3,
     descripcion: 'Migración de la infraestructura actual a la nube AWS.'
 };
@@ -74,19 +74,19 @@ const teams: Team[] = [
         id: 1,
         nombre: 'Soluciones Digitales',
         proyectos: [project1, project2],
-        miembros: ['JD John Doe', 'AS Anna Smith', 'LM Laura Morales'],
+        miembros: ['John Doe', 'Anna Smith', 'Laura Morales'],
     },
     {
         id: 2,
         nombre: 'Tech Lead',
         proyectos: [project3, project4],
-        miembros: ['JD John Doe', 'AS Anna Smith', 'MM Maria Martinez', 'RT Roberto Torres'],
+        miembros: ['John Doe', 'Anna Smith', 'Maria Martinez', 'Roberto Torres'],
     },
     {
         id: 3,
         nombre: 'Boomerang',
         proyectos: [project5],
-        miembros: ['JD John Doe', 'AS Anna Smith', 'VM Victor Morales'],
+        miembros: ['John Doe', 'Anna Smith', 'Victor Morales'],
     },
 ];
 

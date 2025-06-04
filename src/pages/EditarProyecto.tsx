@@ -1,17 +1,31 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ModalExito from '../components/ModalExito';
 import ModalError from '../components/ModalError';
 import type { Project } from '../types/Project';
 import { TeamContext } from '../context/TeamContext';
 
+import {
+    XIcon
+} from "lucide-react";
+
 function convertirFormatoFecha(fecha: string) {
     return fecha.replace(/\//g, "-");
 }
 
+function revertirFormatoFecha(fecha: string) {
+        return fecha.replace(/-/g, "/");
+    }
+
 const EditarProyecto: React.FC = () => {
-    const { selectedTeam } = useContext(TeamContext)!;
+    const teamContext = useContext(TeamContext)!;
+    const { selectedTeam, setSelectedTeam } = teamContext;
     const { proyectos } = selectedTeam || { proyectos: [] };
+
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+
     const params = useParams();
     const id = params.id;
 
@@ -35,7 +49,7 @@ const EditarProyecto: React.FC = () => {
         descripcion: project ? project?.descripcion : '',
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (project) {
             setFormData({
                 nombre: project.nombre || '',
@@ -50,23 +64,21 @@ const EditarProyecto: React.FC = () => {
         }
     }, [project]);
 
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [showErrorModal, setShowErrorModal] = useState(false);
+    useEffect(() => {
+        if (showSuccessModal) {
+            const timeout = setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/proyectos');
+            }, 1500);
+            return () => clearTimeout(timeout);
+        }
+    }, [showSuccessModal, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData({
             ...formData,
             [name]: value,
-        });
-    };
-
-    const handleMiembroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-        setFormData({
-            ...formData,
-            miembros: selectedOptions,
         });
     };
 
@@ -97,26 +109,48 @@ const EditarProyecto: React.FC = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (validateForm()) {
-            // Aquí iría la lógica de actualizar el proyecto
-            console.log('Proyecto actualizado:', formData);
-            setShowSuccessModal(true);
-        } else {
-            setShowErrorModal(true);
-        }
-    };
-
     const closeModal = () => {
         setShowSuccessModal(false);
         setShowErrorModal(false);
         navigate('/proyectos');
     };
-
     if (!project) {
         return <div>Cargando...</div>;
     }
+
+    const actualizarProyecto = (datos: Omit<Project, 'id'>) => {
+        if (!selectedTeam || !project) return;
+        if (!selectedTeam || !project) return;
+
+        // Convertir fechas al formato requerido
+        const nuevoProyecto: Project = {
+            ...project,
+            ...datos,
+            fechaInicio: revertirFormatoFecha(datos.fechaInicio),
+            fechaFin: revertirFormatoFecha(datos.fechaFin),
+        };
+
+        // Actualizar el proyecto en el array de proyectos del equipo
+        const nuevosProyectos = selectedTeam.proyectos.map(p =>
+            p.id === project.id ? nuevoProyecto : p
+        );
+
+        // Actualizar el equipo seleccionado en el contexto
+        setSelectedTeam({
+            ...selectedTeam,
+            proyectos: nuevosProyectos,
+        });
+    };
+    
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (validateForm()) {
+            actualizarProyecto(formData);
+            setShowSuccessModal(true);
+        } else {
+            setShowErrorModal(true);
+        }
+    };
 
     return (
         <div>
@@ -141,7 +175,7 @@ const EditarProyecto: React.FC = () => {
                     {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
                 </div>
 
-                <div className="mb-4">
+                <div>
                     <label className="block font-[500] mb-[0.5rem]" htmlFor="descripcion">
                         Descripción
                     </label>
@@ -186,28 +220,28 @@ const EditarProyecto: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="mb-4">
+                <div>
                     <label className="block font-[500] mb-[0.5rem]" htmlFor="estado">
                         Estado <span className='text-[#FF5A71]'>*</span>
                     </label>
-                    <div className="flex gap-4">
+                    <div className="flex gap-[1rem]">
                         {(["Pendiente", "En progreso", "Terminado"] as Array<"Pendiente" | "En progreso" | "Terminado">).map((estado) => (
                             <button
                                 type="button"
                                 key={estado}
-                                className={`flex items-center gap-[1rem] px-3 py-2 rounded-[0.5rem] border ${formData.estado === estado ? 'border-[#307dfd] bg-[#eaf1ff]' : 'border-[#E2E8EF] bg-white'} transition-colors`}
+                                className={`bg-[#fff] flex items-center p-[0.5rem] rounded-[0.5rem] border ${formData.estado === estado ? ' ' : 'border-[#E2E8EF] bg-white'} transition-colors ${estado === 'Pendiente' ? 'border-[#D87705]' : ''} ${estado === 'En progreso' ? 'border-[#307dfd]' : ''} ${estado === 'Terminado' ? 'border-[#059569]' : ''}`}
                                 onClick={() => setFormData({ ...formData, estado })}
                             >
                                 <span className="inline-flex items-center justify-center">
                                     <span
-                                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.estado === estado ? 'border-[#307dfd]' : 'border-[#a6a6a6]'}`}
+                                        className={`w-[1rem] h-[1rem] rounded-full border-2 flex items-center justify-center ${estado === 'Pendiente' ? 'border-[#D87705]' : ''} ${estado === 'En progreso' ? 'border-[#307dfd]' : ''} ${estado === 'Terminado' ? 'border-[#059569]' : ''}`}
                                     >
                                         {formData.estado === estado && (
-                                            <span className="w-2 h-2 bg-[#307dfd] rounded-full block"></span>
+                                            <span className={`w-[0.5rem] h-[0.5rem] bg-[#307dfd] rounded-full block ${estado === 'Pendiente' ? 'bg-[#D87705]' : ''} ${estado === 'En progreso' ? 'bg-[#307dfd]' : ''} ${estado === 'Terminado' ? 'bg-[#059569]' : ''}`}></span>
                                         )}
                                     </span>
                                 </span>
-                                <span className="text-sm">{estado}</span>
+                                <span className={`text-sm ml-[0.5rem] ${estado === 'Pendiente' ? 'text-[#D87705]' : ''} ${estado === 'En progreso' ? 'text-[#307dfd]' : ''} ${estado === 'Terminado' ? 'text-[#059569]' : ''}`}>{estado}</span>
                             </button>
                         ))}
                     </div>
@@ -217,18 +251,40 @@ const EditarProyecto: React.FC = () => {
                     <label className="block font-[500] mb-[0.5rem]" htmlFor="miembros">
                         Miembros del Equipo Asignados <span className='text-[#FF5A71]'>*</span>
                     </label>
-                    <select
-                        id="miembros"
-                        name="miembros"
-                        multiple
-                        value={formData.miembros}
-                        onChange={handleMiembroChange}
-                        className="w-full p-[0.5rem] border rounded-[0.5rem]"
-                    >
-                        <option value="JD John Doe">JD John Doe</option>
-                        <option value="AS Anna Smith">AS Anna Smith</option>
-                        <option value="MC Maria Cervantes">MC Maria Cervantes</option>
-                    </select>
+                    <div className="flex flex-wrap gap-[1rem]">
+                        {formData.miembros.length === 0 && (
+                            <span className="text-[#a6a6a6] text-sm">No hay miembros asignados.</span>
+                        )}
+                        {formData.miembros.map((miembro, idx) => {
+                            // Obtener iniciales: primer nombre y primer apellido
+                            const partes = miembro.trim().split(' ');
+                            const iniciales = (partes[0]?.[0] || '') + (partes[1]?.[0] || '');
+                            return (
+                                <span
+                                    key={miembro + idx}
+                                    className="bg-[#C1D8FE] flex items-center border border-[#E2E8EF] rounded-full p-[0.2rem]"
+                                >
+                                    <span className="text-[#fff] flex items-center justify-center w-[2rem] h-[2rem] rounded-full bg-[#307dfd] text-white font-bold mr-2 text-xs">
+                                        {iniciales.toUpperCase()}
+                                    </span>
+                                    <span className="ml-[0.5rem] mr-[0.5rem]">{miembro}</span>
+                                    <button
+                                        type="button"
+                                        className="bg-[transparent] border-none focus:outline-none"
+                                        aria-label={`Eliminar ${miembro}`}
+                                        onClick={() => {
+                                            setFormData({
+                                                ...formData,
+                                                miembros: formData.miembros.filter((m, i) => i !== idx),
+                                            });
+                                        }}
+                                    >
+                                        <XIcon className='h-[1.3rem] w-[1.3rem]' />
+                                    </button>
+                                </span>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="flex gap-[1rem] justify-end space-x-4">
@@ -241,6 +297,7 @@ const EditarProyecto: React.FC = () => {
                     </button>
                 </div>
             </form>
+
             {showSuccessModal && <ModalExito title="Proyecto actualizado exitosamente" message="El proyecto ha sido actualizado correctamente." onClose={closeModal} />}
             {showErrorModal && <ModalError title="Error al actualizar el proyecto" message="Por favor, corrige los errores antes de continuar." onClose={closeModal} />}
         </div>
