@@ -1,46 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ModalExito from '../components/ModalExito';
 import ModalError from '../components/ModalError';
+import type { Project } from '../types/Project';
+import { TeamContext } from '../context/TeamContext';
+import { AuthContext } from '../context/AuthContext';
+import { XIcon } from "lucide-react";
 
-interface FormData {
-    nombre: string;
-    descripcion: string;
-    fechaInicio: string;
-    fechaFin: string;
-    estado: 'En progreso' | 'Pendiente' | 'Terminado';
-    miembros: string[];
+function convertirFormatoFecha(fecha: string) {
+    return fecha.replace(/\//g, "-");
+}
+
+function revertirFormatoFecha(fecha: string) {
+    return fecha.replace(/-/g, "/");
 }
 
 const CrearProyecto: React.FC = () => {
-    const [formData, setFormData] = useState<FormData>({
+    const teamContext = useContext(TeamContext)!;
+    const { selectedTeam, setSelectedTeam } = teamContext;
+    const auth = useContext(AuthContext) as { user?: { nombre?: string } };
+    const navigate = useNavigate();
+
+    const [formData, setFormData] = useState<Omit<Project, 'id'>>({
         nombre: '',
-        descripcion: '',
+        estado: 'Pendiente',
         fechaInicio: '',
         fechaFin: '',
-        estado: 'En progreso',
-        miembros: [],
+        progreso: 0,
+        miembros: auth?.user?.nombre ? [auth.user.nombre] : [],
+        equipo: selectedTeam?.id || 1,
+        descripcion: '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
 
-    const navigate = useNavigate();
+    useEffect(() => {
+        if (showSuccessModal) {
+            const timeout = setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/proyectos');
+            }, 1500);
+            return () => clearTimeout(timeout);
+        }
+    }, [showSuccessModal, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData({
             ...formData,
             [name]: value,
-        });
-    };
-
-    const handleMiembroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-        setFormData({
-            ...formData,
-            miembros: selectedOptions,
         });
     };
 
@@ -60,41 +70,66 @@ const CrearProyecto: React.FC = () => {
         }
 
         if (formData.fechaInicio && formData.fechaFin) {
-            const start = new Date(formData.fechaInicio);
-            const end = new Date(formData.fechaFin);
+            const start = new Date(convertirFormatoFecha(formData.fechaInicio));
+            const end = new Date(convertirFormatoFecha(formData.fechaFin));
             if (start > end) {
                 newErrors.fechaFin = 'La fecha de fin debe ser posterior a la fecha de inicio.';
             }
+        }
+
+        if (!formData.miembros || formData.miembros.length === 0) {
+            newErrors.miembros = 'Debe asignar al menos un miembro al proyecto.';
         }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
+    const closeSuccessModal = () => {
+        setShowSuccessModal(false);
+        navigate('/proyectos');
+    };
+
+    const closeErrorModal = () => {
+        setShowErrorModal(false);
+    };
+
+    const crearProyecto = (datos: Omit<Project, 'id'>) => {
+        if (!selectedTeam) return;
+        const nuevoProyecto: Project = {
+            ...datos,
+            id: Date.now(), // O usa otro generador de ID
+            fechaInicio: revertirFormatoFecha(datos.fechaInicio),
+            fechaFin: revertirFormatoFecha(datos.fechaFin),
+        };
+        setSelectedTeam({
+            ...selectedTeam,
+            proyectos: [...selectedTeam.proyectos, nuevoProyecto],
+        });
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            // Aquí iría la lógica de guardar el proyecto
-            console.log('Proyecto creado:', formData);
+            crearProyecto(formData);
             setShowSuccessModal(true);
         } else {
             setShowErrorModal(true);
         }
     };
 
-    const closeModal = () => {
-        setShowSuccessModal(false);
-        setShowErrorModal(false);
-        navigate('/proyectos');
-    };
+    const miembrosEquipo = selectedTeam?.miembros || [];
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">Crear Proyecto</h1>
-            <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="nombre">
-                        Nombre del Proyecto *
+        <div>
+            <p className='m-[0px]'><a href='/proyectos' className='no-underline text-[#a6a6a6]'>Proyectos / </a><span className='text-[#307dfd]'>Crear Proyecto</span></p>
+            <h1 className="mb-[0px] mt-[0.3rem] font-bold">Crear Proyecto</h1>
+            <p className='text-[#a6a6a6] mb-[0px] mt-[0.3rem]'>Completa los datos para tu nuevo proyecto</p>
+
+            <form onSubmit={handleSubmit} className='mt-[1rem] bg-[#fff] p-[2rem] rounded-[1rem] flex flex-col gap-[1rem]'>
+                <div>
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="nombre">
+                        Nombre del Proyecto <span className='text-[#FF5A71]'>*</span>
                     </label>
                     <input
                         type="text"
@@ -102,13 +137,13 @@ const CrearProyecto: React.FC = () => {
                         name="nombre"
                         value={formData.nombre}
                         onChange={handleChange}
-                        className={`w-full p-2 border rounded ${errors.nombre ? 'border-red-500' : ''}`}
+                        className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.nombre ? 'border-red-500' : ''}`}
                     />
-                    {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
+                    {errors.nombre && <p className="text-[#FF5A71]">{errors.nombre}</p>}
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="descripcion">
+                <div>
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="descripcion">
                         Descripción
                     </label>
                     <textarea
@@ -116,93 +151,143 @@ const CrearProyecto: React.FC = () => {
                         name="descripcion"
                         value={formData.descripcion}
                         onChange={handleChange}
-                        className="w-full p-2 border rounded"
+                        className="w-full p-[0.5rem] border rounded-[0.5rem]"
                     />
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="fechaInicio">
-                        Fecha de Inicio *
-                    </label>
-                    <input
-                        type="date"
-                        id="fechaInicio"
-                        name="fechaInicio"
-                        value={formData.fechaInicio}
-                        onChange={handleChange}
-                        className={`w-full p-2 border rounded ${errors.fechaInicio ? 'border-red-500' : ''}`}
-                    />
-                    {errors.fechaInicio && <p className="text-red-500 text-sm mt-1">{errors.fechaInicio}</p>}
+                <div className='flex justify-between gap-[1rem]'>
+                    <div className='w-[50%]'>
+                        <label className="block font-[500] mb-[0.5rem]" htmlFor="fechaInicio">
+                            Fecha de Inicio <span className='text-[#FF5A71]'>*</span>
+                        </label>
+                        <input
+                            type="date"
+                            id="fechaInicio"
+                            name="fechaInicio"
+                            value={formData.fechaInicio ? convertirFormatoFecha(formData.fechaInicio) : ''}
+                            onChange={handleChange}
+                            className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaInicio ? 'border-red-500' : ''}`}
+                        />
+                        {errors.fechaInicio && <p className="text-[#FF5A71]">{errors.fechaInicio}</p>}
+                    </div>
+
+                    <div className='w-[50%]'>
+                        <label className="block font-[500] mb-[0.5rem]" htmlFor="fechaFin">
+                            Fecha de Fin <span className='text-[#FF5A71]'>*</span>
+                        </label>
+                        <input
+                            type="date"
+                            id="fechaFin"
+                            name="fechaFin"
+                            value={formData.fechaFin ? convertirFormatoFecha(formData.fechaFin) : ''}
+                            onChange={handleChange}
+                            className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaFin ? 'border-red-500' : ''}`}
+                        />
+                        {errors.fechaFin && <p className="text-[#FF5A71]">{errors.fechaFin}</p>}
+                    </div>
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="fechaFin">
-                        Fecha de Fin *
+                <div>
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="estado">
+                        Estado <span className='text-[#FF5A71]'>*</span>
                     </label>
-                    <input
-                        type="date"
-                        id="fechaFin"
-                        name="fechaFin"
-                        value={formData.fechaFin}
-                        onChange={handleChange}
-                        className={`w-full p-2 border rounded ${errors.fechaFin ? 'border-red-500' : ''}`}
-                    />
-                    {errors.fechaFin && <p className="text-red-500 text-sm mt-1">{errors.fechaFin}</p>}
+                    <div className="flex gap-[1rem]">
+                        {(["Pendiente", "En progreso", "Terminado"] as Array<"Pendiente" | "En progreso" | "Terminado">).map((estado) => (
+                            <button
+                                type="button"
+                                key={estado}
+                                className={`bg-[#fff] flex items-center p-[0.5rem] rounded-[0.5rem] border ${formData.estado === estado ? ' ' : 'border-[#E2E8EF] bg-white'} transition-colors ${estado === 'Pendiente' ? 'border-[#D87705]' : ''} ${estado === 'En progreso' ? 'border-[#307dfd]' : ''} ${estado === 'Terminado' ? 'border-[#059569]' : ''}`}
+                                onClick={() => setFormData({ ...formData, estado })}
+                            >
+                                <span className="inline-flex items-center justify-center">
+                                    <span
+                                        className={`w-[1rem] h-[1rem] rounded-full border-2 flex items-center justify-center ${estado === 'Pendiente' ? 'border-[#D87705]' : ''} ${estado === 'En progreso' ? 'border-[#307dfd]' : ''} ${estado === 'Terminado' ? 'border-[#059569]' : ''}`}
+                                    >
+                                        {formData.estado === estado && (
+                                            <span className={`w-[0.5rem] h-[0.5rem] bg-[#307dfd] rounded-full block ${estado === 'Pendiente' ? 'bg-[#D87705]' : ''} ${estado === 'En progreso' ? 'bg-[#307dfd]' : ''} ${estado === 'Terminado' ? 'bg-[#059569]' : ''}`}></span>
+                                        )}
+                                    </span>
+                                </span>
+                                <span className={`text-sm ml-[0.5rem] ${estado === 'Pendiente' ? 'text-[#D87705]' : ''} ${estado === 'En progreso' ? 'text-[#307dfd]' : ''} ${estado === 'Terminado' ? 'text-[#059569]' : ''}`}>{estado}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="estado">
-                        Estado
+                <div>
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="miembros">
+                        Miembros del Equipo Asignados <span className='text-[#FF5A71]'>*</span>
                     </label>
-                    <select
-                        id="estado"
-                        name="estado"
-                        value={formData.estado}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                    >
-                        <option value="En progreso">En progreso</option>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Terminado">Terminado</option>
-                    </select>
+                    <div className="flex flex-wrap gap-[1rem]">
+                        {formData.miembros.length === 0 && (
+                            <span className="text-[#a6a6a6] text-sm">No hay miembros asignados.</span>
+                        )}
+                        {formData.miembros.map((miembro, idx) => {
+                            const partes = miembro.trim().split(' ');
+                            const iniciales = (partes[0]?.[0] || '') + (partes[1]?.[0] || '');
+                            return (
+                                <span
+                                    key={miembro + idx}
+                                    className="bg-[#C1D8FE] flex items-center border border-[#E2E8EF] rounded-full p-[0.2rem]"
+                                >
+                                    <span className="text-[#fff] flex items-center justify-center w-[2rem] h-[2rem] rounded-full bg-[#307dfd] text-white font-bold mr-2 text-xs">
+                                        {iniciales.toUpperCase()}
+                                    </span>
+                                    <span className="ml-[0.5rem] mr-[0.5rem]">{miembro}</span>
+                                    <button
+                                        type="button"
+                                        className="bg-[transparent] border-none focus:outline-none"
+                                        aria-label={`Eliminar ${miembro}`}
+                                        onClick={() => {
+                                            setFormData({
+                                                ...formData,
+                                                miembros: formData.miembros.filter((_m, i) => i !== idx),
+                                            });
+                                        }}
+                                    >
+                                        <XIcon className='h-[1.3rem] w-[1.3rem]' />
+                                    </button>
+                                </span>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-2">
+                        <select
+                            className="w-full p-[0.5rem] border rounded-[0.5rem]"
+                            value=""
+                            onChange={e => {
+                                const value = e.target.value;
+                                if (value && !formData.miembros.includes(value)) {
+                                    setFormData({
+                                        ...formData,
+                                        miembros: [...formData.miembros, value],
+                                    });
+                                }
+                            }}
+                        >
+                            <option value="">Agregar miembro...</option>
+                            {miembrosEquipo
+                                .filter(m => !formData.miembros.includes(m))
+                                .map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                        </select>
+                    </div>
+                    {errors.miembros && <p className="text-[#FF5A71]">{errors.miembros}</p>}
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2" htmlFor="miembros">
-                        Miembros del Equipo Asignados
-                    </label>
-                    <select
-                        id="miembros"
-                        name="miembros"
-                        multiple
-                        value={formData.miembros}
-                        onChange={handleMiembroChange}
-                        className="w-full p-2 border rounded"
-                    >
-                        <option value="JD John Doe">JD John Doe</option>
-                        <option value="AS Anna Smith">AS Anna Smith</option>
-                        <option value="MC Maria Cervantes">MC Maria Cervantes</option>
-                    </select>
-                </div>
-
-                <div className="flex justify-end space-x-4">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/proyectos')}
-                        className="px-4 py-2 bg-gray-300 rounded"
-                    >
-                        Cancelar
+                <div className="flex gap-[1rem] justify-end space-x-4">
+                    <button type="button"
+                        onClick={() => navigate('/proyectos')} className="rounded-[0.3rem] bg-[#fff] border-[1px] border-[#E2E8EF] p-[0.5rem] inline-flex items-center justify-center hover:bg-[#E2E8EF] transition-colors duration-200">
+                        <span className="font-semibold text-sm">Cancelar</span>
                     </button>
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                        Crear Proyecto
+                    <button type="submit" className="rounded-[0.3rem] bg-[#307dfd] text-[#fff] border-none p-[0.5rem] inline-flex items-center justify-center hover:bg-[#4687f2] transition-colors duration-200">
+                        <span className="font-semibold text-sm">Crear Proyecto</span>
                     </button>
                 </div>
+                {showSuccessModal && <ModalExito message="Proyecto creado exitosamente" onClose={closeSuccessModal} />}
+                {showErrorModal && <ModalError message="Por favor, corrige los errores antes de continuar." onClose={closeErrorModal} />}
             </form>
-            {showSuccessModal && <ModalExito title="Proyecto creado exitosamente" message="El proyecto ha sido creado correctamente." onClose={closeModal} />}
-            {showErrorModal && <ModalError title="Error al crear el proyecto" message="Por favor, corrige los errores antes de continuar." onClose={closeModal} />}
         </div>
     );
 };

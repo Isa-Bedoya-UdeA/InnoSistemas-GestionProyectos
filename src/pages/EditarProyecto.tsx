@@ -4,6 +4,7 @@ import ModalExito from '../components/ModalExito';
 import ModalError from '../components/ModalError';
 import type { Project } from '../types/Project';
 import { TeamContext } from '../context/TeamContext';
+import { AuthContext } from '../context/AuthContext';
 
 import {
     XIcon
@@ -14,10 +15,28 @@ function convertirFormatoFecha(fecha: string) {
 }
 
 function revertirFormatoFecha(fecha: string) {
-        return fecha.replace(/-/g, "/");
-    }
+    return fecha.replace(/-/g, "/");
+}
 
 const EditarProyecto: React.FC = () => {
+    const useEnsureUserAssigned = () => {
+        const auth = useContext(AuthContext) as { user?: { nombre?: string } };
+        const teamContext = useContext(TeamContext)!;
+        const { selectedTeam } = teamContext;
+        const params = useParams();
+        const id = params.id;
+
+        useEffect(() => {
+            if (!auth?.user?.nombre) return;
+            const found = selectedTeam?.proyectos.find(p => p.id === Number(id));
+            if (found && (!found.miembros || found.miembros.length === 0)) {
+                found.miembros = [auth.user.nombre];
+            }
+        }, [auth?.user?.nombre, selectedTeam, id]);
+    };
+
+    useEnsureUserAssigned();
+    
     const teamContext = useContext(TeamContext)!;
     const { selectedTeam, setSelectedTeam } = teamContext;
     const { proyectos } = selectedTeam || { proyectos: [] };
@@ -105,15 +124,23 @@ const EditarProyecto: React.FC = () => {
             }
         }
 
+        if (!formData.miembros || formData.miembros.length === 0) {
+            newErrors.miembros = 'Debe asignar al menos un miembro al proyecto.';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const closeModal = () => {
+    const closeSuccessModal = () => {
         setShowSuccessModal(false);
-        setShowErrorModal(false);
         navigate('/proyectos');
     };
+
+    const closeErrorModal = () => {
+        setShowErrorModal(false);
+    };
+
     if (!project) {
         return <div>Cargando...</div>;
     }
@@ -160,7 +187,7 @@ const EditarProyecto: React.FC = () => {
             <p className='text-[#a6a6a6] mb-[0px] mt-[0.3rem]'>Actualiza los datos de tu proyecto a continuación</p>
 
             <form onSubmit={handleSubmit} className='mt-[1rem] bg-[#fff] p-[2rem] rounded-[1rem] flex flex-col gap-[1rem]'>
-                <div className="mb-4">
+                <div>
                     <label className="block font-[500] mb-[0.5rem]" htmlFor="nombre">
                         Nombre del Proyecto <span className='text-[#FF5A71]'>*</span>
                     </label>
@@ -172,7 +199,7 @@ const EditarProyecto: React.FC = () => {
                         onChange={handleChange}
                         className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.nombre ? 'border-red-500' : ''}`}
                     />
-                    {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
+                    {errors.nombre && <p className="text-[#FF5A71]">{errors.nombre}</p>}
                 </div>
 
                 <div>
@@ -201,7 +228,7 @@ const EditarProyecto: React.FC = () => {
                             onChange={handleChange}
                             className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaInicio ? 'border-red-500' : ''}`}
                         />
-                        {errors.fechaInicio && <p className="text-red-500 text-sm mt-1">{errors.fechaInicio}</p>}
+                        {errors.fechaInicio && <p className="text-[#FF5A71]">{errors.fechaInicio}</p>}
                     </div>
 
                     <div className='w-[50%]'>
@@ -216,7 +243,7 @@ const EditarProyecto: React.FC = () => {
                             onChange={handleChange}
                             className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaFin ? 'border-red-500' : ''}`}
                         />
-                        {errors.fechaFin && <p className="text-red-500 text-sm mt-1">{errors.fechaFin}</p>}
+                        {errors.fechaFin && <p className="text-[#FF5A71]">{errors.fechaFin}</p>}
                     </div>
                 </div>
                 
@@ -247,7 +274,7 @@ const EditarProyecto: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mb-4">
+                <div>
                     <label className="block font-[500] mb-[0.5rem]" htmlFor="miembros">
                         Miembros del Equipo Asignados <span className='text-[#FF5A71]'>*</span>
                     </label>
@@ -285,6 +312,7 @@ const EditarProyecto: React.FC = () => {
                             );
                         })}
                     </div>
+                    {errors.miembros && <p className="text-[#FF5A71]">{errors.miembros}</p>}
                 </div>
 
                 <div className="flex gap-[1rem] justify-end space-x-4">
@@ -296,12 +324,19 @@ const EditarProyecto: React.FC = () => {
                         <span className="font-semibold text-sm">Actualizar</span>
                     </button>
                 </div>
+            {showSuccessModal && <ModalExito message="Proyecto actualizado exitosamente exitosamente" onClose={closeSuccessModal} />}
+            {showErrorModal && <ModalError message="Error al actualizar el proyecto" onClose={closeErrorModal} />}
             </form>
-
-            {showSuccessModal && <ModalExito title="Proyecto actualizado exitosamente" message="El proyecto ha sido actualizado correctamente." onClose={closeModal} />}
-            {showErrorModal && <ModalError title="Error al actualizar el proyecto" message="Por favor, corrige los errores antes de continuar." onClose={closeModal} />}
         </div>
     );
 };
 
 export default EditarProyecto;
+
+/**
+ * NOTA: Para asegurar que siempre haya al menos un usuario asignado (el usuario autenticado),
+ * debes obtener el usuario autenticado desde el contexto o props. 
+ * Aquí se asume que existe un contexto de autenticación llamado AuthContext.
+ */
+
+

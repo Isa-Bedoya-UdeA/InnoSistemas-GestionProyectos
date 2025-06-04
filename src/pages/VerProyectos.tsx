@@ -36,7 +36,7 @@ const VerProyectos: React.FC = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
     const handleContextMenu = (event: React.MouseEvent<HTMLButtonElement>, buttonElement: HTMLButtonElement, projectId: number) => {
-        event.preventDefault(); // Previene el menú contextual del navegador
+        event.preventDefault();
         const position = getButtonPosition(buttonElement);
         setContextMenuPosition(position);
         setSelectedProjectId(projectId);
@@ -55,9 +55,25 @@ const VerProyectos: React.FC = () => {
         handleCloseContextMenu();
     };
 
+    const handleCreateProject = () => {
+        window.location.href = `/proyectos/crear`;
+        handleCloseContextMenu();
+    };
+
     const handleDeleteProject = () => {
         setShowDeleteModal(true);
-        handleCloseContextMenu();
+        setShowContextMenu(false);
+    };
+
+    const handleConfirmDeleteProject = () => {
+        if (selectedProjectId !== null && selectedTeam) {
+            selectedTeam.proyectos = selectedTeam.proyectos.filter(
+                (proyecto: Project) => proyecto.id !== selectedProjectId
+            );
+        }
+        setShowDeleteModal(false);
+        setShowSuccessModal(true);
+        setSelectedProjectId(null);
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +139,7 @@ const VerProyectos: React.FC = () => {
                             placeholder="Buscar proyectos..." onChange={handleSearchChange} value={searchTerm} />
                     </div>
 
-                    <button className="rounded-[0.5rem] bg-[#307dfd] text-[#fff] border-none p-[0.5rem] inline-flex items-center justify-center hover:bg-[#4687f2] transition-colors duration-200">
+                    <button className="rounded-[0.5rem] bg-[#307dfd] text-[#fff] border-none p-[0.5rem] inline-flex items-center justify-center hover:bg-[#4687f2] transition-colors duration-200" onClick={handleCreateProject}>
                         <PlusIcon />
                         <span className="ml-[0.5rem] font-semibold text-sm">Nuevo Proyecto</span>
                     </button>
@@ -182,17 +198,13 @@ const VerProyectos: React.FC = () => {
                     title="¿Estás seguro de eliminar el proyecto Website Redesign?"
                     message="Esta acción no se puede deshacer. Eliminará permanentemente el proyecto de nuestros servidores."
                     onCancel={() => setShowDeleteModal(false)}
-                    onConfirm={() => {
-                        setShowDeleteModal(false);
-                        setShowSuccessModal(true);
-                    }}
+                    onConfirm={handleConfirmDeleteProject}
                 />
             )}
 
             {showSuccessModal && (
                 <ModalExito
-                    title="Proyecto eliminado exitosamente"
-                    message="El proyecto ha sido eliminado correctamente."
+                    message="Proyecto eliminado exitosamente"
                     onClose={() => setShowSuccessModal(false)}
                 />
             )}

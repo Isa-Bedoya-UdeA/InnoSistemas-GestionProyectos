@@ -24,7 +24,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ proyecto, onContextMenu }) =>
                 <p className={`text-[0.9rem] p-[0.5rem] rounded-full ${proyecto.estado === 'Terminado' ? 'text-[#059569] bg-[#D1F9E4]' : ''} ${proyecto.estado === 'En progreso' ? 'text-[#307dfd] bg-[#C1D8FE]' : ''} ${proyecto.estado === 'Pendiente' ? 'text-[#D87705] bg-[#FDF2C6]' : ''}`}>{proyecto.estado}</p>
                 <button
                     ref={buttonRef}
-                    className="h-[2rem] w-[2rem] bg-[transparent] border-none text-xl font-bold cursor-pointer rounded-full hover:bg-[#E2E8EF] p-[0.5rem] flex items-center justify-center"
+                    className="h-[2rem] w-[2rem] bg-[transparent] border-none cursor-pointer rounded-full hover:bg-[#E2E8EF] p-[0.5rem] flex items-center justify-center"
                     onClick={handleButtonClick}
                 >
                     <EllipsisVerticalIcon className="h-full w-full" /> {/* Icono ocupa todo el botón */}

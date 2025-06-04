@@ -1,24 +1,23 @@
-// src/components/ModalError.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
+import {
+    CircleAlertIcon
+} from "lucide-react";
 
 interface ModalErrorProps {
-    title: string;
     message: string;
     onClose: () => void;
 }
 
-const ModalError: React.FC<ModalErrorProps> = ({ title, message, onClose }) => {
+const ModalError: React.FC<ModalErrorProps> = ({ message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded shadow-lg w-96">
-                <h2 className="text-xl font-bold mb-4">{title}</h2>
-                <p className="mb-6">{message}</p>
-                <div className="flex justify-end">
-                    <button onClick={onClose} className="px-4 py-2 bg-red-500 text-white rounded">
-                        Aceptar
-                    </button>
-                </div>
-            </div>
+        <div className="fixed inset-0 text-[#FF405A] bg-[#FFCCD3] border-[1px] border-[#FF405A] flex items-center justify-center z-50 top-[0.2rem] right-[0.2rem] rounded-[1rem] p-[1rem]" style={{ boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }}>
+            <CircleAlertIcon className="h-[2rem] w-[2rem] mr-[0.5rem]" />
+            <p className='m-[0px]'>{message}</p>
         </div>
     );
 };
