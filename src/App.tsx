@@ -13,8 +13,8 @@ const project1: Project = {
     id: 1,
     nombre: "Website Redesign",
     estado: "En progreso",
-    fechaInicio: "Ene 15, 2025",
-    fechaFin: "Mar 30, 2025",
+    fechaInicio: "2025/01/15",
+    fechaFin: "2025/03/30",
     progreso: 65,
     miembros: ["JD John Doe", "AS Anna Smith"],
     equipo: 1,
@@ -25,8 +25,8 @@ const project2: Project = {
     id: 2,
     nombre: "Mobile App Development",
     estado: "Terminado",
-    fechaInicio: "Nov 10, 2024",
-    fechaFin: "Feb 20, 2025",
+    fechaInicio: "2024/11/10",
+    fechaFin: "2025/02/20",
     progreso: 100,
     miembros: ["JD John Doe", "AS Anna Smith", "LM Laura Morales"],
     equipo: 1,
@@ -37,8 +37,8 @@ const project3: Project = {
     id: 3,
     nombre: "API Integration Project",
     estado: "Pendiente",
-    fechaInicio: "Mar 5, 2026",
-    fechaFin: "Abr 15, 2026",
+    fechaInicio: "2026/03/05",
+    fechaFin: "2026/04/15",
     progreso: 5,
     miembros: ["MM Maria Martinez"],
     equipo: 2, // Este proyecto pertenece a "equipo-b"
@@ -49,8 +49,8 @@ const project4: Project = {
     id: 4,
     nombre: "Database Optimization",
     estado: "En progreso",
-    fechaInicio: "Abr 1, 2025",
-    fechaFin: "Jun 30, 2025",
+    fechaInicio: "2025/05/01",
+    fechaFin: "2025/06/30",
     progreso: 40,
     miembros: ["RT Roberto Torres"],
     equipo: 2,
@@ -61,8 +61,8 @@ const project5: Project = {
     id: 5,
     nombre: "Cloud Migration",
     estado: "Pendiente",
-    fechaInicio: "Jul 1, 2025",
-    fechaFin: "Dic 31, 2025",
+    fechaInicio: "2025/01/07",
+    fechaFin: "2025/08/31",
     progreso: 10,
     miembros: ["VM Victor Morales"],
     equipo: 3,
@@ -96,7 +96,7 @@ const App: React.FC = () => {
 			<Router>
 				<div className="flex w-full h-screen max-w-full max-h-max [font-family:'Inter',Helvetica] relative box-border">
 					<MenuLateral teams={teams} />
-					<main className="bg-[#f8f9fa] flex-1 ml-[17rem] h-full w-full p-[5rem]">
+					<main className="bg-[#f8f9fa] flex-1 ml-[17rem] h-full w-full p-[5rem] overflow-y-scroll">
                         <Routes>
                             <Route path="/proyectos" element={<VerProyectos />} />
                             <Route path="/proyectos/crear" element={<CrearProyecto />} />

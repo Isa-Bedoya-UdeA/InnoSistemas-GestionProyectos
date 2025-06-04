@@ -5,6 +5,10 @@ import ModalError from '../components/ModalError';
 import type { Project } from '../types/Project';
 import { TeamContext } from '../context/TeamContext';
 
+function convertirFormatoFecha(fecha: string) {
+    return fecha.replace(/\//g, "-");
+}
+
 const EditarProyecto: React.FC = () => {
     const { selectedTeam } = useContext(TeamContext)!;
     const { proyectos } = selectedTeam || { proyectos: [] };
@@ -30,6 +34,21 @@ const EditarProyecto: React.FC = () => {
         equipo: project ? project?.equipo : 1,
         descripcion: project ? project?.descripcion : '',
     });
+
+    React.useEffect(() => {
+        if (project) {
+            setFormData({
+                nombre: project.nombre || '',
+                estado: project.estado || 'En progreso',
+                fechaInicio: project.fechaInicio || '',
+                fechaFin: project.fechaFin || '',
+                progreso: project.progreso || 0,
+                miembros: project.miembros || [],
+                equipo: project.equipo || 1,
+                descripcion: project.descripcion || '',
+            });
+        }
+    }, [project]);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -67,8 +86,8 @@ const EditarProyecto: React.FC = () => {
         }
 
         if (formData.fechaInicio && formData.fechaFin) {
-            const start = new Date(formData.fechaInicio);
-            const end = new Date(formData.fechaFin);
+            const start = new Date(convertirFormatoFecha(formData.fechaInicio));
+            const end = new Date(convertirFormatoFecha(formData.fechaFin));
             if (start > end) {
                 newErrors.fechaFin = 'La fecha de fin debe ser posterior a la fecha de inicio.';
             }
@@ -108,7 +127,7 @@ const EditarProyecto: React.FC = () => {
 
             <form onSubmit={handleSubmit} className='mt-[1rem] bg-[#fff] p-[2rem] rounded-[1rem] flex flex-col gap-[1rem]'>
                 <div className="mb-4">
-                    <label className="block text-gray-700 mb-[0.5rem]" htmlFor="nombre">
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="nombre">
                         Nombre del Proyecto <span className='text-[#FF5A71]'>*</span>
                     </label>
                     <input
@@ -123,7 +142,7 @@ const EditarProyecto: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-gray-700 mb-[0.5rem]" htmlFor="descripcion">
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="descripcion">
                         Descripción
                     </label>
                     <textarea
@@ -137,14 +156,14 @@ const EditarProyecto: React.FC = () => {
 
                 <div className='flex justify-between gap-[1rem]'>
                     <div className='w-[50%]'>
-                        <label className="block text-gray-700 mb-[0.5rem]" htmlFor="fechaInicio">
+                        <label className="block font-[500] mb-[0.5rem]" htmlFor="fechaInicio">
                             Fecha de Inicio <span className='text-[#FF5A71]'>*</span>
                         </label>
                         <input
                             type="date"
                             id="fechaInicio"
                             name="fechaInicio"
-                            value={formData.fechaInicio}
+                            value={formData.fechaInicio ? convertirFormatoFecha(formData.fechaInicio) : ''}
                             onChange={handleChange}
                             className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaInicio ? 'border-red-500' : ''}`}
                         />
@@ -152,40 +171,50 @@ const EditarProyecto: React.FC = () => {
                     </div>
 
                     <div className='w-[50%]'>
-                        <label className="block text-gray-700 mb-[0.5rem]" htmlFor="fechaFin">
+                        <label className="block font-[500] mb-[0.5rem]" htmlFor="fechaFin">
                             Fecha de Fin <span className='text-[#FF5A71]'>*</span>
                         </label>
                         <input
                             type="date"
                             id="fechaFin"
                             name="fechaFin"
-                            value={formData.fechaFin}
+                            value={formData.fechaFin ? convertirFormatoFecha(formData.fechaFin) : ''}
                             onChange={handleChange}
                             className={`w-full p-[0.5rem] border rounded-[0.5rem] ${errors.fechaFin ? 'border-red-500' : ''}`}
                         />
                         {errors.fechaFin && <p className="text-red-500 text-sm mt-1">{errors.fechaFin}</p>}
                     </div>
                 </div>
-
+                
                 <div className="mb-4">
-                    <label className="block text-gray-700 mb-[0.5rem]" htmlFor="estado">
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="estado">
                         Estado <span className='text-[#FF5A71]'>*</span>
                     </label>
-                    <select
-                        id="estado"
-                        name="estado"
-                        value={formData.estado}
-                        onChange={handleChange}
-                        className="w-full p-[0.5rem] border rounded-[0.5rem]"
-                    >
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En progreso">En progreso</option>
-                        <option value="Terminado">Terminado</option>
-                    </select>
+                    <div className="flex gap-4">
+                        {(["Pendiente", "En progreso", "Terminado"] as Array<"Pendiente" | "En progreso" | "Terminado">).map((estado) => (
+                            <button
+                                type="button"
+                                key={estado}
+                                className={`flex items-center gap-[1rem] px-3 py-2 rounded-[0.5rem] border ${formData.estado === estado ? 'border-[#307dfd] bg-[#eaf1ff]' : 'border-[#E2E8EF] bg-white'} transition-colors`}
+                                onClick={() => setFormData({ ...formData, estado })}
+                            >
+                                <span className="inline-flex items-center justify-center">
+                                    <span
+                                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.estado === estado ? 'border-[#307dfd]' : 'border-[#a6a6a6]'}`}
+                                    >
+                                        {formData.estado === estado && (
+                                            <span className="w-2 h-2 bg-[#307dfd] rounded-full block"></span>
+                                        )}
+                                    </span>
+                                </span>
+                                <span className="text-sm">{estado}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-gray-700 mb-[0.5rem]" htmlFor="miembros">
+                    <label className="block font-[500] mb-[0.5rem]" htmlFor="miembros">
                         Miembros del Equipo Asignados <span className='text-[#FF5A71]'>*</span>
                     </label>
                     <select
@@ -202,19 +231,13 @@ const EditarProyecto: React.FC = () => {
                     </select>
                 </div>
 
-                <div className="flex justify-end space-x-4">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/proyectos')}
-                        className="px-4 p-[0.5rem] bg-gray-300 rounded-[0.5rem]"
-                    >
-                        Cancelar
+                <div className="flex gap-[1rem] justify-end space-x-4">
+                    <button type="button"
+                        onClick={() => navigate('/proyectos')} className="rounded-[0.3rem] bg-[#fff] border-[1px] border-[#E2E8EF] p-[0.5rem] inline-flex items-center justify-center hover:bg-[#E2E8EF] transition-colors duration-200">
+                        <span className="font-semibold text-sm">Cancelar</span>
                     </button>
-                    <button
-                        type="submit"
-                        className="px-4 p-[0.5rem] bg-blue-500 text-white rounded-[0.5rem] hover:bg-blue-600"
-                    >
-                        Actualizar Proyecto
+                    <button type="submit" className="rounded-[0.3rem] bg-[#307dfd] text-[#fff] border-none p-[0.5rem] inline-flex items-center justify-center hover:bg-[#4687f2] transition-colors duration-200">
+                        <span className="font-semibold text-sm">Actualizar</span>
                     </button>
                 </div>
             </form>
