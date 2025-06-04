@@ -275,7 +275,7 @@ const EditarProyecto: React.FC = () => {
                                         onClick={() => {
                                             setFormData({
                                                 ...formData,
-                                                miembros: formData.miembros.filter((m, i) => i !== idx),
+                                                miembros: formData.miembros.filter((_m, i) => i !== idx),
                                             });
                                         }}
                                     >
