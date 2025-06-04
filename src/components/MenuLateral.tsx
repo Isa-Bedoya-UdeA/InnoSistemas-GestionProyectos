@@ -8,12 +8,9 @@ import {
 } from "lucide-react";
 import type { Team } from '../types/Team';
 
-interface MenuLateralProps {
-    teams: Team[];
-}
 
-const MenuLateral: React.FC<MenuLateralProps> = ({ teams }) => {
-    const { selectedTeamId, setSelectedTeamId } = useContext(TeamContext)!;
+const MenuLateral: React.FC = () => {
+    const { selectedTeamId, setSelectedTeamId, teams } = useContext(TeamContext)!;
 
     const [isEquipoMenuOpen, setIsEquipoMenuOpen] = useState(true);
 

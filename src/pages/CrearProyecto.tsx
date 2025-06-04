@@ -1,11 +1,11 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ModalExito from '../components/ModalExito';
 import ModalError from '../components/ModalError';
 import type { Project } from '../types/Project';
 import { TeamContext } from '../context/TeamContext';
 import { AuthContext } from '../context/AuthContext';
-import { XIcon } from "lucide-react";
+import { XIcon, PlusIcon } from "lucide-react";
 
 function convertirFormatoFecha(fecha: string) {
     return fecha.replace(/\//g, "-");
@@ -17,9 +17,21 @@ function revertirFormatoFecha(fecha: string) {
 
 const CrearProyecto: React.FC = () => {
     const teamContext = useContext(TeamContext)!;
-    const { selectedTeam, setSelectedTeam } = teamContext;
+    const { selectedTeam, setSelectedTeam, teams, setTeams } = teamContext;
     const auth = useContext(AuthContext) as { user?: { nombre?: string } };
     const navigate = useNavigate();
+    const [open, setOpen] = useState(false);
+    const selectRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const [formData, setFormData] = useState<Omit<Project, 'id'>>({
         nombre: '',
@@ -28,13 +40,33 @@ const CrearProyecto: React.FC = () => {
         fechaFin: '',
         progreso: 0,
         miembros: auth?.user?.nombre ? [auth.user.nombre] : [],
-        equipo: selectedTeam?.id || 1,
+        equipo: selectedTeam?.id ?? 1,
         descripcion: '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
+
+    useEffect(() => {
+        if (showSuccessModal) {
+            const timeout = setTimeout(() => {
+                setShowSuccessModal(false);
+                navigate('/proyectos');
+            }, 1500);
+            return () => clearTimeout(timeout);
+        }
+    }, [showSuccessModal, navigate]);
+
+    // Sincroniza el equipo en formData cuando cambia el equipo seleccionado
+    useEffect(() => {
+        if (selectedTeam) {
+            setFormData(prev => ({
+                ...prev,
+                equipo: selectedTeam.id
+            }));
+        }
+    }, [selectedTeam]);
 
     useEffect(() => {
         if (showSuccessModal) {
@@ -95,17 +127,25 @@ const CrearProyecto: React.FC = () => {
     };
 
     const crearProyecto = (datos: Omit<Project, 'id'>) => {
-        if (!selectedTeam) return;
+        const equipoId = datos.equipo;
         const nuevoProyecto: Project = {
             ...datos,
             id: Date.now(), // O usa otro generador de ID
             fechaInicio: revertirFormatoFecha(datos.fechaInicio),
             fechaFin: revertirFormatoFecha(datos.fechaFin),
         };
-        setSelectedTeam({
-            ...selectedTeam,
-            proyectos: [...selectedTeam.proyectos, nuevoProyecto],
-        });
+        setTeams(teams.map(team =>
+            team.id === equipoId
+                ? { ...team, proyectos: [...team.proyectos, nuevoProyecto] }
+                : team
+        ));
+        // Actualiza el selectedTeam si corresponde
+        if (selectedTeam && selectedTeam.id === equipoId) {
+            setSelectedTeam({
+                ...selectedTeam,
+                proyectos: [...selectedTeam.proyectos, nuevoProyecto],
+            });
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -251,27 +291,40 @@ const CrearProyecto: React.FC = () => {
                             );
                         })}
                     </div>
-                    <div className="mt-2">
-                        <select
-                            className="w-full p-[0.5rem] border rounded-[0.5rem]"
-                            value=""
-                            onChange={e => {
-                                const value = e.target.value;
-                                if (value && !formData.miembros.includes(value)) {
-                                    setFormData({
-                                        ...formData,
-                                        miembros: [...formData.miembros, value],
-                                    });
-                                }
-                            }}
+                    <div className="relative inline-block mt-[1rem]" ref={selectRef}>
+                        <div
+                            className="flex items-center p-[0.5rem] text-[#307dfd] border border-[#307dfd] rounded-full cursor-pointer bg-white"
+                            onClick={() => setOpen(!open)}
                         >
-                            <option value="">Agregar miembro...</option>
-                            {miembrosEquipo
-                                .filter(m => !formData.miembros.includes(m))
-                                .map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                ))}
-                        </select>
+                            <PlusIcon className="h-[1.3rem] w-[1.3rem]" />
+                            <span className="flex-1 text-gray-500">
+                                Agregar miembro...
+                            </span>
+                        </div>
+                        {open && (
+                            <div className="absolute left-[1rem] top-[3rem] mt-1 bg-[#fff] border border-[#a6a6a6] rounded-[1rem] shadow-lg z-10 p-[1rem]">
+                                {miembrosEquipo
+                                    .filter(m => !formData.miembros.includes(m))
+                                    .map(m => (
+                                        <div
+                                            key={m}
+                                            className="p-[0.5rem] hover:bg-[#E2E8EF] cursor-pointer"
+                                            onClick={() => {
+                                                setFormData({
+                                                    ...formData,
+                                                    miembros: [...formData.miembros, m],
+                                                });
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            {m}
+                                        </div>
+                                    ))}
+                                {miembrosEquipo.filter(m => !formData.miembros.includes(m)).length === 0 && (
+                                    <div className="px-4 py-2 text-gray-400">Sin miembros disponibles</div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     {errors.miembros && <p className="text-[#FF5A71]">{errors.miembros}</p>}
                 </div>
@@ -293,3 +346,4 @@ const CrearProyecto: React.FC = () => {
 };
 
 export default CrearProyecto;
+

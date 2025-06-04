@@ -6,96 +6,14 @@ import MenuLateral from './components/MenuLateral';
 import VerProyectos from './pages/VerProyectos';
 import CrearProyecto from './pages/CrearProyecto';
 import EditarProyecto from './pages/EditarProyecto';
-import type { Team } from './types/Team';
-import type { Project } from './types/Project';
 
-const project1: Project = {
-    id: 1,
-    nombre: "Website Redesign",
-    estado: "En progreso",
-    fechaInicio: "2025/01/15",
-    fechaFin: "2025/03/30",
-    progreso: 65,
-    miembros: ["John Doe", "Anna Smith"],
-    equipo: 1,
-    descripcion: 'Diseño y desarrollo de un nuevo sitio web corporativo.'
-};
-
-const project2: Project = {
-    id: 2,
-    nombre: "Mobile App Development",
-    estado: "Terminado",
-    fechaInicio: "2024/11/10",
-    fechaFin: "2025/02/20",
-    progreso: 100,
-    miembros: ["John Doe", "Anna Smith", "Laura Morales"],
-    equipo: 1,
-    descripcion: 'Desarrollo de una aplicación móvil para iOS y Android.'
-};
-
-const project3: Project = {
-    id: 3,
-    nombre: "API Integration Project",
-    estado: "Pendiente",
-    fechaInicio: "2026/03/05",
-    fechaFin: "2026/04/15",
-    progreso: 5,
-    miembros: ["Maria Martinez"],
-    equipo: 2, // Este proyecto pertenece a "equipo-b"
-    descripcion: 'Integración de nuevas APIs para funcionalidades de terceros.'
-};
-
-const project4: Project = {
-    id: 4,
-    nombre: "Database Optimization",
-    estado: "En progreso",
-    fechaInicio: "2025/05/01",
-    fechaFin: "2025/06/30",
-    progreso: 40,
-    miembros: ["Roberto Torres"],
-    equipo: 2,
-    descripcion: 'Optimización de las consultas y estructuras de la base de datos principal.'
-};
-
-const project5: Project = {
-    id: 5,
-    nombre: "Cloud Migration",
-    estado: "Pendiente",
-    fechaInicio: "2025/01/07",
-    fechaFin: "2025/08/31",
-    progreso: 10,
-    miembros: ["Victor Morales"],
-    equipo: 3,
-    descripcion: 'Migración de la infraestructura actual a la nube AWS.'
-};
-
-const teams: Team[] = [
-    {
-        id: 1,
-        nombre: 'Soluciones Digitales',
-        proyectos: [project1, project2],
-        miembros: ['John Doe', 'Anna Smith', 'Laura Morales'],
-    },
-    {
-        id: 2,
-        nombre: 'Tech Lead',
-        proyectos: [project3, project4],
-        miembros: ['John Doe', 'Anna Smith', 'Maria Martinez', 'Roberto Torres'],
-    },
-    {
-        id: 3,
-        nombre: 'Boomerang',
-        proyectos: [project5],
-        miembros: ['John Doe', 'Anna Smith', 'Victor Morales'],
-    },
-];
 
 const App: React.FC = () => {
 	return (
-		<TeamProvider teams={teams}>
+		<TeamProvider>
 			<Router>
 				<div className="flex w-full h-screen max-w-full max-h-max [font-family:'Inter',Helvetica] relative box-border">
-					<MenuLateral teams={teams} />
+					<MenuLateral/>
 					<main className="bg-[#f8f9fa] flex-1 ml-[17rem] h-full w-full p-[5rem] overflow-y-scroll">
                         <Routes>
                             <Route path="/proyectos" element={<VerProyectos />} />

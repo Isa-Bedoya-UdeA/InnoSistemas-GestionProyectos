@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ModalExito from '../components/ModalExito';
 import ModalError from '../components/ModalError';
@@ -7,6 +7,7 @@ import { TeamContext } from '../context/TeamContext';
 import { AuthContext } from '../context/AuthContext';
 
 import {
+    PlusIcon,
     XIcon
 } from "lucide-react";
 
@@ -38,12 +39,26 @@ const EditarProyecto: React.FC = () => {
     useEnsureUserAssigned();
     
     const teamContext = useContext(TeamContext)!;
-    const { selectedTeam, setSelectedTeam } = teamContext;
+    const { selectedTeam, setSelectedTeam, teams, setTeams } = teamContext;
     const { proyectos } = selectedTeam || { proyectos: [] };
+    const miembrosEquipo = selectedTeam?.miembros || [];
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
+    const [open, setOpen] = useState(false);
+    const selectRef = useRef<HTMLDivElement>(null);
+
+    // Cierra el menú si se hace clic fuera
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const params = useParams();
     const id = params.id;
@@ -147,9 +162,7 @@ const EditarProyecto: React.FC = () => {
 
     const actualizarProyecto = (datos: Omit<Project, 'id'>) => {
         if (!selectedTeam || !project) return;
-        if (!selectedTeam || !project) return;
 
-        // Convertir fechas al formato requerido
         const nuevoProyecto: Project = {
             ...project,
             ...datos,
@@ -157,15 +170,24 @@ const EditarProyecto: React.FC = () => {
             fechaFin: revertirFormatoFecha(datos.fechaFin),
         };
 
-        // Actualizar el proyecto en el array de proyectos del equipo
-        const nuevosProyectos = selectedTeam.proyectos.map(p =>
-            p.id === project.id ? nuevoProyecto : p
-        );
+        // Actualiza el equipo en el array global de equipos
+        setTeams(teams.map(team =>
+            team.id === selectedTeam.id
+                ? {
+                    ...team,
+                    proyectos: team.proyectos.map(p =>
+                        p.id === project.id ? nuevoProyecto : p
+                    )
+                }
+                : team
+        ));
 
-        // Actualizar el equipo seleccionado en el contexto
+        // Opcional: también actualiza el equipo seleccionado en el contexto
         setSelectedTeam({
             ...selectedTeam,
-            proyectos: nuevosProyectos,
+            proyectos: selectedTeam.proyectos.map(p =>
+                p.id === project.id ? nuevoProyecto : p
+            ),
         });
     };
     
@@ -283,7 +305,6 @@ const EditarProyecto: React.FC = () => {
                             <span className="text-[#a6a6a6] text-sm">No hay miembros asignados.</span>
                         )}
                         {formData.miembros.map((miembro, idx) => {
-                            // Obtener iniciales: primer nombre y primer apellido
                             const partes = miembro.trim().split(' ');
                             const iniciales = (partes[0]?.[0] || '') + (partes[1]?.[0] || '');
                             return (
@@ -312,6 +333,41 @@ const EditarProyecto: React.FC = () => {
                             );
                         })}
                     </div>
+                    <div className="relative inline-block mt-[1rem]" ref={selectRef}>
+                        <div
+                            className="flex items-center p-[0.5rem] text-[#307dfd] border border-[#307dfd] rounded-full cursor-pointer bg-white"
+                            onClick={() => setOpen(!open)}
+                        >
+                            <PlusIcon className="h-[1.3rem] w-[1.3rem]" />
+                            <span className="flex-1 text-gray-500">
+                                Agregar miembro...
+                            </span>
+                        </div>
+                        {open && (
+                            <div className="absolute left-[1rem] top-[3rem] mt-1 bg-[#fff] border border-[#a6a6a6] rounded-[1rem] shadow-lg z-10 p-[1rem]">
+                                {miembrosEquipo
+                                    .filter(m => !formData.miembros.includes(m))
+                                    .map(m => (
+                                        <div
+                                            key={m}
+                                            className="p-[0.5rem] hover:bg-[#E2E8EF] cursor-pointer"
+                                            onClick={() => {
+                                                setFormData({
+                                                    ...formData,
+                                                    miembros: [...formData.miembros, m],
+                                                });
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            {m}
+                                        </div>
+                                    ))}
+                                {miembrosEquipo.filter(m => !formData.miembros.includes(m)).length === 0 && (
+                                    <div className="px-4 py-2 text-gray-400">Sin miembros disponibles</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                     {errors.miembros && <p className="text-[#FF5A71]">{errors.miembros}</p>}
                 </div>
 
@@ -332,11 +388,3 @@ const EditarProyecto: React.FC = () => {
 };
 
 export default EditarProyecto;
-
-/**
- * NOTA: Para asegurar que siempre haya al menos un usuario asignado (el usuario autenticado),
- * debes obtener el usuario autenticado desde el contexto o props. 
- * Aquí se asume que existe un contexto de autenticación llamado AuthContext.
- */
-
-
