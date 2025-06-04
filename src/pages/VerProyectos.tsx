@@ -4,7 +4,7 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
 } from "lucide-react";
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import ProjectCard from '../components/ProjectCard';
 import ContextMenu from '../components/ContextMenu';
 import ModalAlerta from '../components/ModalAlerta';
@@ -87,6 +87,12 @@ const VerProyectos: React.FC = () => {
         setShowSuccessModal(true);
         setSelectedProjectId(null);
     };
+
+    useEffect(() => {
+        if (selectedTeam) {
+            setCurrentPage(1);
+        }
+    }, [selectedTeam]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
